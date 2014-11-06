@@ -43,7 +43,7 @@ $command = sprintf('%s build %s %s', $config['bin'], $config['json'], $config['w
 if (isset($_GET['package'])) {
     $command .= ' ' . $_GET['package'];
     chdir($config['repositories'] .  '/' . $_GET['package']);
-    exec('git fetch origin && git remote update --prune origin');
+    exec('git fetch origin && git remote update --prune origin && for remote in `git branch -r | grep -v master `; do git checkout --track $remote ; done');
     chdir(__DIR__);
 }
 if (null !== $config['user']) {
