@@ -42,8 +42,8 @@ if (!empty($errors)) {
 $command = sprintf('%s build %s %s', $config['bin'], $config['json'], $config['webroot']);
 if (isset($_GET['package'])) {
     $command .= ' ' . $_GET['package'];
-    chdir('/tmp/satis/repositories/' . $_GET['package']);
-    exec('git fetch origin');
+    chdir($config['repositories'] .  '/' . $_GET['package']);
+    exec('git fetch origin && git remote update --prune origin');
     chdir(__DIR__);
 }
 if (null !== $config['user']) {

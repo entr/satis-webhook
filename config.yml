@@ -2,3 +2,4 @@ bin: ../satis/bin/satis   # Where your satis bin is located
 json: ../satis/satis.json # Where your satis.json is located
 webroot: ../satis/public     # Where you want to dump index.html and packages.json
 user: ~          # Run script as another user (sudo -u user -i bin/satis build ...)
+repositories: /var/repositories
