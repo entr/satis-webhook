@@ -1,4 +1,16 @@
 <?php
+fastcgi_finish_request();
+
+const LOCK_FILE = "/var/run/satis.lock";
+const TIME_LIMIT = 60;
+
+$lockHandle = fopen(LOCK_FILE, "w+");
+set_time_limit(TIME_LIMIT);
+while(!flock($lockHandle, LOCK_EX)) {
+    // busy waiting
+}
+
+
 require_once __DIR__.'/vendor/autoload.php';
 
 use Symfony\Component\Process\Process;
@@ -59,5 +71,8 @@ $exitCode = $process->run(function ($type, $buffer) {
         echo '.';
     }
 });
+
+flock($lockHandle, LOCK_UN);
+fclose($lockHandle);
 
 echo "\n\n" . ($exitCode === 0 ? 'Successful rebuild!' : 'Oops! An error occured!') . "\n";
