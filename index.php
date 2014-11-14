@@ -8,18 +8,13 @@ require_once __DIR__ . '/vendor/autoload.php';
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
-function shutdown($lockHandle, $repo)
-{
-    releaseLock($lockHandle, $repo);
-}
-
 $repo = isset($_GET['package']) ? $_GET['package'] : "ALL PACKAGES";
 
 logEntry("Started", $repo);
 
 $lockHandle = acquireLock($repo);
 
-register_shutdown_function("shutdown", $lockHandle, $repo);
+register_shutdown_function("releaseLock", $lockHandle, $repo);
 
 if (!file_exists(__DIR__.'/config.yml')) {
     logEntry(
