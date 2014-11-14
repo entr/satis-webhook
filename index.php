@@ -1,23 +1,31 @@
 <?php
 fastcgi_finish_request();
+set_time_limit(120);
 
-const LOCK_FILE = "/var/run/satis.lock";
-const TIME_LIMIT = 60;
-
-$lockHandle = fopen(LOCK_FILE, "w+");
-set_time_limit(TIME_LIMIT);
-while(!flock($lockHandle, LOCK_EX)) {
-    // busy waiting
-}
-
-
-require_once __DIR__.'/vendor/autoload.php';
+require_once __DIR__ . '/lock_functions.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
+function shutdown($lockHandle, $repo)
+{
+    releaseLock($lockHandle, $repo);
+}
+
+$repo = isset($_GET['package']) ? $_GET['package'] : "ALL PACKAGES";
+
+logEntry("Started", $repo);
+
+$lockHandle = acquireLock($repo);
+
+register_shutdown_function("shutdown", $lockHandle, $repo);
+
 if (!file_exists(__DIR__.'/config.yml')) {
-    echo "Please, define your satis configuration in a config.yml file.\nYou can use the config.yml.dist as a template.";
+    logEntry(
+        "Please, define your satis configuration in a config.yml file.\nYou can use the config.yml.dist as a template.",
+        $repo
+    );
     exit(-1);
 }
 
@@ -44,9 +52,8 @@ if (!file_exists($config['webroot'])) {
 }
 
 if (!empty($errors)) {
-    echo 'The build cannot be run due to some errors. Please, review them and check your config.yml:'."\n";
     foreach ($errors as $error) {
-        echo '- '.$error."\n";
+        logEntry($error, $repo);
     }
     exit(-1);
 }
@@ -63,16 +70,11 @@ if (null !== $config['user']) {
 }
 
 $process = new Process($command);
-$exitCode = $process->run(function ($type, $buffer) {
+$exitCode = $process->run(function ($type, $buffer) use ($repo) {
     if ('err' === $type) {
-        echo 'E';
-        error_log($buffer);
-    } else {
-        echo '.';
+        logMessage($repo . ": " . $buffer);
     }
 });
 
-flock($lockHandle, LOCK_UN);
-fclose($lockHandle);
-
-echo "\n\n" . ($exitCode === 0 ? 'Successful rebuild!' : 'Oops! An error occured!') . "\n";
+$message = $exitCode === 0 ? 'Successful rebuild! Done.' : 'An error occurred! Done.';
+logEntry($message, $repo);
