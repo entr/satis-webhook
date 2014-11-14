@@ -69,12 +69,18 @@ if (null !== $config['user']) {
     $command = sprintf('sudo -u %s -i %s', $config['user'], $command);
 }
 
+$errorBuffer = "";
 $process = new Process($command);
-$exitCode = $process->run(function ($type, $buffer) use ($repo) {
+$exitCode = $process->run(function ($type, $buffer) use (&$errorBuffer) {
     if ('err' === $type) {
-        logMessage($repo . ": " . $buffer);
+        $errorBuffer .= $buffer;
     }
 });
+
+if(!empty($errorBuffer)) {
+    logEntry("Error", $repo);
+    logMessage($errorBuffer);
+}
 
 $message = $exitCode === 0 ? 'Successful rebuild! Done.' : 'An error occurred! Done.';
 logEntry($message, $repo);
