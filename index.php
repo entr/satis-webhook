@@ -25,7 +25,9 @@ if (!file_exists(__DIR__.'/config.yml')) {
 }
 
 $defaults = array(
+    'php' => 'php',
     'bin' => 'bin/satis',
+    'arguments' => '',
     'json' => 'satis.json',
     'webroot' => 'web/',
     'user' => null,
@@ -53,7 +55,7 @@ if (!empty($errors)) {
     exit(-1);
 }
 
-$command = sprintf('%s build %s %s', $config['bin'], $config['json'], $config['webroot']);
+$command = sprintf('%s %s build %s %s %s', $config['php'], $config['bin'], $config['arguments'], $config['json'], $config['webroot']);
 if (isset($_GET['package'])) {
     $command .= ' ' . $_GET['package'];
     chdir($config['repositories'] .  '/' . $_GET['package']);
