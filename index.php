@@ -1,5 +1,10 @@
 <?php
-fastcgi_finish_request();
+if ( function_exists('fastcgi_finish_request') ) {
+  fastcgi_finish_request();
+} else {
+  flush();
+}
+
 set_time_limit(120);
 
 require_once __DIR__ . '/lock_functions.php';
