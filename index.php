@@ -46,6 +46,12 @@ if (!file_exists($config['webroot'])) {
     $errors[] = 'The webroot directory could not be found.';
 }
 
+$payload = json_decode( file_get_contents('php://input') );
+
+if ( NULL === $payload ) {
+    $errors[] = 'Can\'t parse json payload.';
+}
+
 if (!empty($errors)) {
     foreach ($errors as $error) {
         logEntry($error, $repo);
@@ -53,18 +59,16 @@ if (!empty($errors)) {
     exit(-1);
 }
 
-$command = sprintf('%s build %s %s', $config['bin'], $config['json'], $config['webroot']);
-if (isset($_GET['package'])) {
-    $command .= ' ' . $_GET['package'];
-    chdir($config['repositories'] .  '/' . $_GET['package']);
-    exec('git fetch origin && git remote update --prune origin && git branch -D `git branch -l | grep -v \* | xargs` ; for remote in `git branch -r | grep -v HEAD `; do git checkout --track $remote ; done');
-    chdir(__DIR__);
-}
+$repo_ssh = sprintf( 'git@bitbucket.org:%s.git', $payload->repository->full_name );
+
+$command = sprintf('%s build --repository-url=%s %s %s', $config['bin'], $repo_ssh, $config['json'], $config['webroot']);
+
 if (null !== $config['user']) {
     $command = sprintf('sudo -u %s -i %s', $config['user'], $command);
 }
 
 $errorBuffer = "";
+logEntry( sprintf('Executing: %s', $command), $repo );
 $process = new Process($command);
 $exitCode = $process->run(function ($type, $buffer) use (&$errorBuffer) {
     if ('err' === $type) {
