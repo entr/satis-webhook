@@ -1,7 +1,9 @@
 <?php
 
-const FILE_LOCK = "/var/run/satis-webhook.lock";
-const FILE_LOG = "/var/log/satis-webhook.log";
+use Symfony\Component\Yaml\Yaml;
+
+const FILE_LOCK = VAR_PATH . "/run/satis-webhook.lock";
+const FILE_LOG = VAR_PATH . "/log/satis-webhook.log";
 
 const LOG_HEADER = "%s : %s\t\t";
 const LOG_WAITING = "Waiting to acquire lock";
@@ -9,6 +11,13 @@ const LOG_NOTFOUND = "LOCK file %s cannot be found or accessed";
 const LOG_ACQUIRED = "Acquired lock";
 const LOG_RELEASED = "Released lock";
 const LOG_FILE_NOTFOUND = "LOG file %s canot be found or accessed";
+
+if ( ! file_exists(dirname( FILE_LOCK )) ) {
+  mkdir( dirname( FILE_LOCK ), 0755, true );
+}
+if ( ! file_exists(dirname( FILE_LOG )) ) {
+  mkdir( dirname( FILE_LOG ), 0755, true );
+}
 
 function logMessage($message)
 {
@@ -27,9 +36,9 @@ function logEntry($entry, $id)
 function acquireLock($id)
 {
     logEntry(LOG_WAITING, $id);
-    $lockHandle = fopen(FILE_LOCK, "r+");
+    $lockHandle = fopen(FILE_LOCK, "w+");
     if($lockHandle === false) {
-        logEntry(sprintf(LOG_NOTFOUND, FILE_LOG), $id);
+        logEntry(sprintf(LOG_NOTFOUND, FILE_LOCK), $id);
         return false;
     }
     flock($lockHandle, LOCK_EX); // Busy waiting

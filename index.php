@@ -1,4 +1,32 @@
 <?php
+
+use Symfony\Component\Process\Process;
+use Symfony\Component\Yaml\Yaml;
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+if (!file_exists(__DIR__.'/config.yml')) {
+  echo "Please, define your satis configuration in a config.yml file.\nYou can use the config.yml.dist as a template.";
+  exit(-1);
+}
+
+$defaults = array(
+  'bin' => 'bin/satis',
+  'json' => 'satis.json',
+  'webroot' => 'web/',
+  'user' => null,
+  'var_path' => '/var',
+);
+
+try {
+  $config = array_merge($defaults, Yaml::parse(__DIR__.'/config.yml'));
+} catch(Exception $e) {
+  echo $e->getMessage();
+  exit(-1);
+}
+
+define('VAR_PATH', $config['var_path']);
+
 if ( function_exists('fastcgi_finish_request') ) {
   fastcgi_finish_request();
 } else {
@@ -8,10 +36,6 @@ if ( function_exists('fastcgi_finish_request') ) {
 set_time_limit(120);
 
 require_once __DIR__ . '/lock_functions.php';
-require_once __DIR__ . '/vendor/autoload.php';
-
-use Symfony\Component\Process\Process;
-use Symfony\Component\Yaml\Yaml;
 
 $repo = isset($_GET['package']) ? $_GET['package'] : "ALL PACKAGES";
 
@@ -20,23 +44,6 @@ logEntry("Started", $repo);
 $lockHandle = acquireLock($repo);
 
 register_shutdown_function("releaseLock", $lockHandle, $repo);
-
-if (!file_exists(__DIR__.'/config.yml')) {
-    logEntry(
-        "Please, define your satis configuration in a config.yml file.\nYou can use the config.yml.dist as a template.",
-        $repo
-    );
-    exit(-1);
-}
-
-$defaults = array(
-    'bin' => 'bin/satis',
-    'json' => 'satis.json',
-    'webroot' => 'web/',
-    'user' => null,
-);
-$config = Yaml::parse(__DIR__.'/config.yml');
-$config = array_merge($defaults, $config);
 
 $errors = array();
 if (!file_exists($config['bin'])) {
